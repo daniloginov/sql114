@@ -14,7 +14,7 @@ public class UserDaoJDBCImpl implements UserDao {
     @Override
     public void createUsersTable() {
         try (Statement statement = conn.createStatement()) {
-            statement.executeUpdate("CREATE TABLE IF NOT EXISTS users " + "(id BIGINT PRIMARY KEY AUTO_INCREMENT, name VARCHAR (255), lastName VARCHAR (255), age INT)");
+            statement.executeUpdate("CREATE TABLE IF NOT EXISTS users (id BIGINT AUTO_INCREMENT PRIMARY KEY, name VARCHAR(100) NOT NULL, last_name VARCHAR(100) NOT NULL, age TINYINT NOT NULL)");
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -22,21 +22,24 @@ public class UserDaoJDBCImpl implements UserDao {
     @Override
     public void dropUsersTable() {
         try (Statement statement = conn.createStatement()) {
-            statement.executeUpdate("DROP TABLE IF EXISTS users");
+            statement.executeUpdate("TRUNCATE TABLE users");
         } catch (SQLException e) {
             e.printStackTrace();
         }
     }
     @Override
     public void saveUser(String name, String lastName, byte age) {
-        var sql = "INSERT INTO users (name, lastName, age) VALUES (?, ?, ?)";
-
+        String sql = "INSERT INTO users (id, name, last_name, age) VALUES (null, ?, ?, ?)";
         try (PreparedStatement preparedStatement = conn.prepareStatement(sql)) {
             preparedStatement.setString(1, name);
             preparedStatement.setString(2, lastName);
             preparedStatement.setByte(3, age);
-
-            preparedStatement.executeUpdate();
+            int counter = preparedStatement.executeUpdate();
+            if (counter > 0) {
+                System.out.println("Новый пользователь был успешно добавлен.");
+            } else {
+                System.out.println("Не удалось добавить пользователя.");
+            }
         } catch (SQLException e) {
             e.printStackTrace();
         }
@@ -53,13 +56,17 @@ public class UserDaoJDBCImpl implements UserDao {
     @Override
     public List<User> getAllUsers() {
         List<User> users = new ArrayList<>();
-        String sql = "SELECT * FROM users";
+        String sql = "SELECT*FROM users";
 
-        try (ResultSet resultSet = conn.createStatement().executeQuery(sql)) {
+        try (Statement statement = conn.createStatement();
+                ResultSet resultSet = statement.executeQuery(sql)) {
+
             while(resultSet.next()) {
-                User user = new User(resultSet.getString("name"),
-                        resultSet.getString("lastName"), resultSet.getByte("age"));
+                User user = new User ();
                 user.setId(resultSet.getLong("id"));
+                user.setName(resultSet.getString("name"));
+                user.setLastName(resultSet.getString("last_name"));
+                user.setAge(resultSet.getByte("age"));
                 users.add(user);
             }
         } catch (SQLException e) {
